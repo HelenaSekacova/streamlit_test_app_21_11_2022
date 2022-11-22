@@ -6,7 +6,7 @@ import streamlit as st
 def app():
     st.title("Wine")
     # vstup 1: výběr datové sady
-    data_file_path = st.file_uploader("Data file")
+    data_file_path = st.file_uploader("wine.train")
 
     if data_file_path is None:
         st.warning("No data file uploaded")
