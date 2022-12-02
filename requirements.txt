@@ -1,3 +1,20 @@
 pandas==1.5.1
 streamlit==1.15.0
 plotly==5.11.0
+
+import pandas as pd
+import plotly.express as px
+import plotly.figure_factory as ff
+import streamlit as st
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split,cross_val_score
+from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.svm import SVC,SVR
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, mean_absolute_error, mean_squared_error, r2_score
+from sklearn.impute import SimpleImputer
+from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBRegressor
+
+import numpy as np
