@@ -143,7 +143,7 @@ def app():
     st.write(px.scatter_matrix(X, dimensions=dimensions, color=color, opacity=opacity))
 
     # separating X and y from dataset
-    y_column = st.selectbox("Choose a column as your target=y", X.columns)
+    y_column = st.selectbox("Choose a column as your target=y. Please see the bottom of the page.", X.columns)
     X.dropna(axis=0,subset=[f'{y_column}'],inplace=True)
     y=X[f'{y_column}']
     #st.write(pd.DataFrame(y))
@@ -170,118 +170,123 @@ def app():
     X.drop([f'{y_column}'],axis=1,inplace=True)
     st.write(pd.DataFrame(X))
 
-    X_train, X_valid, y_train, y_valid=train_test_split(X,y,train_size=0.8, test_size=0.2,stratify=y)
-
-    option=st.selectbox('Choose a replacement instead of NaN',options=['No imputer','replace_zero','replace_mean','replace_most_frequent','replace_constant'])
-    if option=='No imputer':
-        st.warning('Choose imputer if needed')
-        imputer=None
-        
-    elif option=='replace_zero':
-        imputer=SimpleImputer(strategy='constant',fill_value=0)
-
-    elif option=='replace_mean':
-        imputer=SimpleImputer(strategy='mean')
-
-    elif option=='replace_most_frequent':
-        imputer=SimpleImputer(strategy='most_frequent')
-
-    elif option=='replace_constant':
-        imputer=SimpleImputer(strategy='constant',fill_value=st.number_input('Fill the constant in', min_value=1, max_value=10000))
-        
-    # instead of else: # imputer should be empty string in this case that means there is no NaN!
-    if imputer is not None:    
-        impl_X_train, impl_X_valid = imputer_func(X, imputer, X_train, X_valid)
+    try:
+        X_train, X_valid, y_train, y_valid=train_test_split(X,y,train_size=0.8, test_size=0.2,stratify=y)
+    except ValueError:
+        st.markdown('''<style>.big-font{font-size:30px; color: red;}</style>''', unsafe_allow_html=True)
+        st.markdown('<p class="big-font">Change your target => the least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2!', unsafe_allow_html=True)
     else:
-        impl_X_train, impl_X_valid=X_train, X_valid
-        st.write('No imputer')
 
-    # Scaler
-    option=st.selectbox('Choose a scaler if needed', options=['No scaler','StandardScaler'])
-    if option=='No scaler':
-        st.warning('Choose a scaler if needed')
-        scaler= None
+        option=st.selectbox('Choose a replacement instead of NaN',options=['No imputer','replace_zero','replace_mean','replace_most_frequent','replace_constant'])
+        if option=='No imputer':
+            st.warning('Choose imputer if needed')
+            imputer=None
+            
+        elif option=='replace_zero':
+            imputer=SimpleImputer(strategy='constant',fill_value=0)
+
+        elif option=='replace_mean':
+            imputer=SimpleImputer(strategy='mean')
+
+        elif option=='replace_most_frequent':
+            imputer=SimpleImputer(strategy='most_frequent')
+
+        elif option=='replace_constant':
+            imputer=SimpleImputer(strategy='constant',fill_value=st.number_input('Fill the constant in', min_value=1, max_value=10000))
+            
+        # instead of else: # imputer should be empty string in this case that means there is no NaN!
+        if imputer is not None:    
+            impl_X_train, impl_X_valid = imputer_func(X, imputer, X_train, X_valid)
+        else:
+            impl_X_train, impl_X_valid=X_train, X_valid
+            st.write('No imputer')
+
+        # Scaler
+        option=st.selectbox('Choose a scaler if needed', options=['No scaler','StandardScaler'])
+        if option=='No scaler':
+            st.warning('Choose a scaler if needed')
+            scaler= None
+            
+        elif option=='StandardScaler':
+            scaler=StandardScaler()
+
+        if scaler is not None:
+            scaled_X_train, scaled_X_valid=scalling(scaler,impl_X_train, impl_X_valid)
+        else:
+            st.write('No scaler')
+            scaled_X_train, scaled_X_valid=impl_X_train, impl_X_valid
         
-    elif option=='StandardScaler':
-        scaler=StandardScaler()
-
-    if scaler is not None:
-        scaled_X_train, scaled_X_valid=scalling(scaler,impl_X_train, impl_X_valid)
-    else:
-        st.write('No scaler')
-        scaled_X_train, scaled_X_valid=impl_X_train, impl_X_valid
-    
-    # Model
-    '''if you are using RandomForestRegressor for classification tasks, the "probability" you get might greater than 1, or less than 0. That's not what we expected.
-    On the other hand, RandomForestClassifier uses accuracy_score as loss function, while RandomForestRegressor uses r2_score. That's a big difference.'''
-    
-    # Regression
-    option=st.selectbox('Choose a regression model if avalaible',options=['No regression','LinearRegression','Lasso','SVR','RandomForestRegressor','XGBRegressor'])
-    if option=='No regression':
-        st.warning('Choose a classification model if avalaible')
-        regr_model=None
-    
-    elif option=='LinearRegression':
-        regr_model=LinearRegression()
-
-    elif option=='Lasso':
-        regr_model=Lasso(alpha=st.number_input('Fill the alpha (the degree of sparsity of the estimated coefficients) in', min_value=0, max_value=10000))
-
-    elif option=='SVR':
-        regr_model=SVR()
-
-    elif option== 'RandomForestRegressor':
-        regr_model=RandomForestRegressor(
-        n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
-        random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
-        max_depth=st.number_input('Fill the max_depth in',min_value=1, max_value=10000)
-        )
-
-    elif option=='XGBRegressor':
-        regr_model=XGBRegressor(
-        learning_rate=st.number_input('Fill the learning_rate in',min_value=0, max_value=10000),
-        n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
-        n_jobs=st.number_input('Fill the n_jobs in',min_value=0, max_value=10000),
-        random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000)
-        )
-
-    if regr_model is not None:
-        regr_modelling(regr_model, scaled_X_train, scaled_X_valid, y_train,y_valid)
-    else:
-        st.write('It is not regression or model is not available')
-    
-    # Classification
-    option=st.selectbox('Choose a classification model if avalaible',options=['Classification','DecisionTreeClassifier','KNeighborsClassifier','RandomForestClassifier','SVC','LogisticRegression'])
-    if option=='Classification':
-        st.warning('Choose one of the models')
-        class_model=None
-    
-    elif option=='DecisionTreeClassifier':
-        class_model=DecisionTreeClassifier(
-        random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
-        max_leaf_nodes=st.number_input('Fill the max_leaf_nodes in',min_value=0, max_value=10000)
-        )
+        # Model
+        '''if you are using RandomForestRegressor for classification tasks, the "probability" you get might greater than 1, or less than 0. That's not what we expected.
+        On the other hand, RandomForestClassifier uses accuracy_score as loss function, while RandomForestRegressor uses r2_score. That's a big difference.'''
         
-    elif option=='KNeighborsClassifier':
-        class_model=KNeighborsClassifier(n_neighbors=st.number_input('Fill the n_neighbors in',min_value=0, max_value=10000))
-                
-    elif option=='RandomForestClassifier':
-        class_model=RandomForestClassifier(
-        n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
-        random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
-        max_depth=st.number_input('Fill the max_depth in',min_value=1, max_value=10000)
-        )
+        # Regression
+        option=st.selectbox('Choose a regression model if avalaible',options=['No regression','LinearRegression','Lasso','SVR','RandomForestRegressor','XGBRegressor'])
+        if option=='No regression':
+            st.warning('Choose a classification model if avalaible')
+            regr_model=None
         
-    elif option=='SVC':
-        class_model= SVC()
+        elif option=='LinearRegression':
+            regr_model=LinearRegression()
+
+        elif option=='Lasso':
+            regr_model=Lasso(alpha=st.number_input('Fill the alpha (the degree of sparsity of the estimated coefficients) in', min_value=0, max_value=10000))
+
+        elif option=='SVR':
+            regr_model=SVR()
+
+        elif option== 'RandomForestRegressor':
+            regr_model=RandomForestRegressor(
+            n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
+            random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
+            max_depth=st.number_input('Fill the max_depth in',min_value=1, max_value=10000)
+            )
+
+        elif option=='XGBRegressor':
+            regr_model=XGBRegressor(
+            learning_rate=st.number_input('Fill the learning_rate in',min_value=0, max_value=10000),
+            n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
+            n_jobs=st.number_input('Fill the n_jobs in',min_value=0, max_value=10000),
+            random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000)
+            )
+
+        if regr_model is not None:
+            regr_modelling(regr_model, scaled_X_train, scaled_X_valid, y_train,y_valid)
+        else:
+            st.write('It is not regression or model is not available')
         
-    elif option=='LogisticRegression':
-        class_model=LogisticRegression(random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000)) 
+        # Classification
+        option=st.selectbox('Choose a classification model if avalaible',options=['Classification','DecisionTreeClassifier','KNeighborsClassifier','RandomForestClassifier','SVC','LogisticRegression'])
+        if option=='Classification':
+            st.warning('Choose one of the models')
+            class_model=None
         
-    if class_model is not None:
-        class_modelling(class_model, scaled_X_train, scaled_X_valid, y_train,y_valid,y)
-    else:
-        st.write('It is not classification or model is not available')
+        elif option=='DecisionTreeClassifier':
+            class_model=DecisionTreeClassifier(
+            random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
+            max_leaf_nodes=st.number_input('Fill the max_leaf_nodes in',min_value=0, max_value=10000)
+            )
+            
+        elif option=='KNeighborsClassifier':
+            class_model=KNeighborsClassifier(n_neighbors=st.number_input('Fill the n_neighbors in',min_value=0, max_value=10000))
+                    
+        elif option=='RandomForestClassifier':
+            class_model=RandomForestClassifier(
+            n_estimators=st.number_input('Fill the n_estimators in',min_value=1, max_value=10000),
+            random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000),
+            max_depth=st.number_input('Fill the max_depth in',min_value=1, max_value=10000)
+            )
+            
+        elif option=='SVC':
+            class_model= SVC()
+            
+        elif option=='LogisticRegression':
+            class_model=LogisticRegression(random_state=st.number_input('Fill the random_state in',min_value=0, max_value=10000)) 
+            
+        if class_model is not None:
+            class_modelling(class_model, scaled_X_train, scaled_X_valid, y_train,y_valid,y)
+        else:
+            st.write('It is not classification or model is not available')
 
 if __name__ == "__main__":
     app()
