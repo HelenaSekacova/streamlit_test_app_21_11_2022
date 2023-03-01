@@ -1,6 +1,5 @@
 # streamlit_test_app_21_11_2022
 streamlit_test_app_21_11_2022 is a simple streamlit app in python for machine learning practice.
-update on the 1st of March 2023
 
 This app allows to see basic difference between Regression and Classification and some of their metrics. The pipeline was added to the app -the last part.
 
@@ -28,3 +27,5 @@ For the Classification were used classification report (which includes precision
 
 
 *For some of the models is there an opportunity to change their parameters BUT in general all of these examples are simple.*
+
+_(last update on the 1st of March 2023)_
